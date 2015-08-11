@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" ng-app="myApp">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>My App</title>  
+  
+  <link rel="stylesheet" href="lib/onsen/css/onsenui.css">  
+  <link rel="stylesheet" href="lib/onsen/css/topcoat-mobile-onsen-ios7.css">  
+  <link rel="stylesheet" href="styles/app.css"/>
+
+  <script src="lib/onsen/js/angular/angular.js"></script>    
+  <script src="lib/onsen/js/onsenui.js"></script>    
+  <script src="js/app.js"></script> 
+
+        <script type="text/javascript">
+            function loadProducts() {
+              document.getElementById('btnBuscar').innerHTML = 'Carregando...';
+              var request = new XMLHttpRequest();
+              request.open("GET", "http://app.focuslojas.com.br/api/products.js?serial_number=901&access_token=y5fKgVDJ09i6kgIUYCYSbrs5uhT2gqwg&version=5000", true);
+              request.onreadystatechange = function() {
+                if (request.readyState == 4) {
+                  document.getElementById('btnBuscar').innerHTML = 'Buscar';
+                  if (request.status == 200 || request.status == 0) {
+                    var prods = JSON.parse(request.responseText);
+                    for (i = 0; i < prods.length; i++) {
+                      var tr = document.createElement('tr');
+                      var td = tr.appendChild(document.createElement('td'));
+                      td.innerHTML = prods[i].code;
+                      var td = tr.appendChild(document.createElement('td'));
+                      td.innerHTML = prods[i].description;
+                      var td = tr.appendChild(document.createElement('td'));
+                      td.innerHTML = prods[i].price;
+
+                      document.getElementById('products').appendChild(tr);
+                    }
+                  }
+                }
+              }
+              console.log("asking for tweets");
+              request.send();
+            }
+        </script>
+
+  
+</head>
+
+<body>    
+  
+  <ons-screen>
+
+    <ons-sliding-menu 
+      behind-page="menu.html" 
+      above-page="page1.html">
+    </ons-sliding-menu>
+    
+  </ons-screen>
+ 
+</body>
+</html>

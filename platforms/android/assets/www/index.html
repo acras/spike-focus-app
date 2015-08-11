@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+    <title>Ember Starter Kit</title>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/libs/jquery-2.1.1.min.js"></script>
+    <script src="js/libs/handlebars-v1.3.0.js"></script>
+    <script src="js/libs/ember-1.8.0.js"></script>
+    <script src="js/app.js"></script>
+    <script type="text/javascript" charset="utf-8" src="cordova.js"></script>
+    <!-- to activate the test runner, add the "?test" query string parameter -->
+    <script src="tests/runner.js"></script>
+
+    <script type="text/javascript">
+      var db;
+      function onLoad(){      
+        document.addEventListener("deviceready", onDeviceReady, false);
+      }
+
+      $(document).ready(function () {
+        $("#leituraColetaForm").on('submit', onSubmitRead);
+      });
+
+      function onSubmitRead(event){
+        var code = $('#code')[0].value;
+        addCode(code);
+        $('#code')[0].value = '';
+        return false;
+      };
+
+      function addCode(code){
+        db.transaction(function(tx) {
+          tx.executeSql("select * from products where barcode = '" + code + "';", [], function(tx, res) {
+            var tr = document.createElement('tr');
+            var td = tr.appendChild(document.createElement('td'));
+            var i = res.rows.item(0);
+            td.innerHTML = i.code;
+            var td = tr.appendChild(document.createElement('td'));
+            td.innerHTML = i.description;
+            var td = tr.appendChild(document.createElement('td'));
+            td.innerHTML = i.price;
+            document.getElementById('productreads').appendChild(tr);
+          });
+        });
+      }
+
+    // onSuccess Callback
+    // This method accepts a Position object, which contains the
+    // current GPS coordinates
+    //
+    var onSuccess = function(position) {
+      $('#geo')[0].innerHTML = 'Latitude: '          + position.coords.latitude          + '<br>' +
+            'Longitude: '         + position.coords.longitude         + '<br>' +
+            'Altitude: '          + position.coords.altitude          + '<br>' +
+            'Accuracy: '          + position.coords.accuracy          + '<br>' +
+            'Altitude Accuracy: ' + position.coords.altitudeAccuracy  + '<br>' +
+            'Heading: '           + position.coords.heading           + '<br>' +
+            'Speed: '             + position.coords.speed             + '<br>' +
+            'Timestamp: '         + position.timestamp                + '<br>';
+    };
+
+    // onError Callback receives a PositionError object
+    //
+    function onError(error) {
+      alert('code: '    + error.code    + '\n' +
+                    'message: ' + error.message + '\n');
+    }
+
+      function onDeviceReady(){
+        document.addEventListener("resume", onResume, false);
+        ensureDatabase();
+        countProducts();
+        navigator.geolocation.watchPosition(onSuccess, onError);
+      }
+
+      function ensureDatabase(){
+        db = window.sqlitePlugin.openDatabase({name: "my.db"});
+        db.transaction(function(tx) {
+          tx.executeSql('CREATE TABLE IF NOT EXISTS products(id integer primary key, version integer, barcode text, code text, description text, price number)');
+        });
+      }
+
+      function deleteAllProducts(){
+         db.transaction(function(tx) {
+          tx.executeSql("delete from products;", [], function(tx, res) {
+            alert("Produtos apagados");
+            countProducts();
+          });
+         });
+       }
+
+      function countProducts(){
+        db.transaction(function(tx) {
+          tx.executeSql("select count(id) as cnt from products;", [], function(tx, res) {
+            //$('countprods').innerHTML(res.rows.length);
+            alert("res.rows.length: " + res.rows.item(0).cnt);
+          });
+         });
+      }
+
+      function maxProductVersion(f){
+        db.transaction(function(tx) {
+          tx.executeSql("select max(version) as maxver from products;", [], function(tx, res) {
+            //$('countprods').innerHTML(res.rows.length);
+            f(res.rows.item(0).maxver);
+          });
+        }); 
+      }
+
+      function onResume(){
+        //alert('Retomouo o foco');
+      }
+
+      function insereProduto(id, version, code, barcode, description, price){
+        db.transaction(function(tx) {
+          tx.executeSql("INSERT INTO products (id, version, code, barcode, description, price) VALUES (?,?,?,?,?,?)", 
+            [id, version, code, barcode, description, price], 
+            function(tx, res) {}
+          );
+          }, function(e){
+            alert(e);
+          });
+      }
+
+      function fetchNewProducts(maxVersion){
+        var request = new XMLHttpRequest();
+        request.open("GET", "http://app.focuslojas.com.br/api/products.js?serial_number=901&access_token=y5fKgVDJ09i6kgIUYCYSbrs5uhT2gqwg&version=" + maxVersion, true);
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            document.getElementById('btnBuscar').innerHTML = 'Buscar';
+            if (request.status == 200 || request.status == 0) {
+              var prods = JSON.parse(request.responseText);
+              for (i = 0; i < prods.length; i++) {
+                insereProduto(prods[i].id, prods[i].version, prods[i].code, prods[i].barcode, prods[i].description, prods[i].price);
+                var tr = document.createElement('tr');
+                var td = tr.appendChild(document.createElement('td'));
+                td.innerHTML = prods[i].code;
+                var td = tr.appendChild(document.createElement('td'));
+                td.innerHTML = prods[i].description;
+                var td = tr.appendChild(document.createElement('td'));
+                td.innerHTML = prods[i].price;
+                document.getElementById('products').appendChild(tr);
+              }
+            }
+          }
+        }
+        request.send();
+      }
+
+      function loadProducts() {
+        document.getElementById('btnBuscar').innerHTML = 'Carregando...';
+        maxProductVersion(fetchNewProducts);
+      }
+    </script>
+  </head>
+  <body onLoad="onLoad()">
+    <script type="text/x-handlebars">
+      <h2>Coletor</h2>
+      <a href='#/'>Início</a>
+      <a href='#/products'>Produtos</a>
+      <a href='#/geolocation'>Geo</a>
+      <hr>
+      {{outlet}}
+    </script>
+
+    <script type="text/x-handlebars" id="index">
+      <form id='leituraColetaForm' name='leituracoleta'>
+        <input type='text' id='code' /> 
+        <table>
+          <thead><td>Ref.</td><td>Descrição</td><td>Preço</td></thead>
+          <tbody id='productreads'></tbody>
+        </table>
+      </form>
+    </script>
+
+    <script type="text/x-handlebars" id="products">
+      Produtos<br/>
+      <button id='btnBuscar' onclick='loadProducts();'>Buscar</button>
+      <button id='btnApagatudo' onclick='deleteAllProducts();'>Apagar Tudo</button>
+      <button id='btnMaxVersion' onclick='alert("is: " + maxProductVersion());'>Max Version</button>
+      <table>
+        <thead><td>Ref.</td><td>Descrição</td><td>Preço</td></thead>
+        <tbody id='products'></tbody>
+      </table>
+    </script>
+
+    <script type="text/x-handlebars" id="geolocation">
+      <div id='geo'/>
+          </script>
+
+</body>
+</html>

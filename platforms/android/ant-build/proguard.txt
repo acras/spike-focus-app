@@ -1,0 +1,6 @@
+# view AndroidManifest.xml #generated:6
+-keep class com.acras.focuslojas.FocusLojas { <init>(...); }
+
+# view AndroidManifest.xml #generated:12
+-keep class org.pgsqlite.SQLitePlugin { <init>(...); }
+
