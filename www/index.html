@@ -126,7 +126,7 @@
 
       function fetchNewProducts(maxVersion){
         var request = new XMLHttpRequest();
-        request.open("GET", "http://app.focuslojas.com.br/api/products.js?serial_number=901&access_token=TOKEN" + maxVersion, true);
+        request.open("GET", "http://app.focuslojas.com.br/api/products.js?serial_number=901&access_token=TOKEN&version=" + maxVersion, true);
         request.onreadystatechange = function() {
           if (request.readyState == 4) {
             document.getElementById('btnBuscar').innerHTML = 'Buscar';
